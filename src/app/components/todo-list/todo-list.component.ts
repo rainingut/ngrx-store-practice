@@ -1,64 +1,49 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-
-export interface Todo  {
-  id: any;
-  title: string;
-}
+import { TodoReducerKey } from './../../stores/todo/todo.reducer';
+import { Component, OnInit } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { Observable, map, tap } from 'rxjs';
+import { Todo, TodoState } from '../../stores/todo/todo.store';
+import { ADDTODO, REMOVETODO } from '../../stores/todo/todo.action';
 
 @Component({
-  // templateUrl: './todo-list.component.html',
-  // styleUrl: './todo-list.component.scss'
   selector: 'app-todo-list',
   template: `
-    <input type="text" #title>
+    <input type="text" #title (keyup.enter)="addTodo(title)">
     <button (click)="addTodo(title)">Add</button>
     <ul>
-      <li *ngFor="let todo of todos">
+      <li *ngFor="let todo of todos | async">
         {{ todo.title }}
         <button (click)="removeTodo(todo)">Remove</button>
       </li>
     </ul>
   `,
 })
-export class TodoListComponent {
-  // todos: Observable<Todo[]>;
-  @Input() todos: Todo[] = [];
-  @Output() onadd = new EventEmitter();
-  @Output() onremove = new EventEmitter();
+export class TodoListComponent implements OnInit{
+  todos!: Observable<Todo[]>;
 
   constructor(
-    // private store: Store<TodoState>
-  ) {
-    // this.todos = store.select('todos');
+    private store: Store<TodoState>
+  ) {}
+
+  ngOnInit(): void {
+    this.todos = this.store.select((TodoReducerKey as any))
+    .pipe(map(todoResponse=>todoResponse?.todos || []))
   }
 
   addTodo(input: HTMLInputElement) {
-    this.onadd.emit(input.value);
-
-    // const value = input.value?.trim?.();
-    // if (!value) return;
-    // this.todos.push({id: Date.now(), title: value});
-
-    // this.store.dispatch({
-    //   type: ADD_TODO,
-    //   payload: {
-    //     title: value
-    //   }
-    // });
+    const value = input.value?.trim?.();
+    if (!value) return;
+    this.store.dispatch({
+      type: ADDTODO,
+      payload: { title: value }
+    });
     input.value = '';
   }
 
   removeTodo(todo: Todo) {
-    this.onremove.emit(todo);
-
-    // const {id} = todo;
-    // this.todos = this.todos.filter(todo => todo.id!==id);
-
-    // this.store.dispatch({
-    //   type: REMOVE_TODO,
-    //   payload: {
-    //     id: todo.id
-    //   }
-    // });
+    this.store.dispatch({
+      type: REMOVETODO,
+      payload: { id: todo.id }
+    });
   }
 }

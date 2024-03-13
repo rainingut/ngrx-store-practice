@@ -1,43 +1,37 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
-
-export interface Todo  {
-  id: any;
-  title: string;
-}
+import { TodoReducerKey } from './../../stores/todo/todo.reducer';
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { map, Observable } from 'rxjs';
+import { CLEARTODOS } from '../../stores/todo/todo.action';
+import { Todo, TodoState } from '../../stores/todo/todo.store';
 @Component({
-  // templateUrl: './todo-dashboard.component.html',
-  // styleUrl: './todo-dashboard.component.scss'
   selector: 'app-todo-dashboard',
   template: `
-    <p>
-      Last Update: {{ lastUpdate | date:'mediumTime'}}
-    </p>
-    <p>
-      Total items: {{ (todos ).length }}
-    </p>
+    <p> Last Update: {{ (lastUpdate | async) | date:'mediumTime'}} </p>
+    <p> Total items: {{ (todos | async )?.length }} </p>
     <p>
       <button (click)="clearTodos()">Clear All</button>
     </p>
   `
 })
-export class TodoDashboardComponent {
-  // todos: Observable<Todo[]>;
-  // lastUpdate: Observable<Date>;
-  @Input() todos: Todo[] = [];
-  @Output() onclear = new EventEmitter();
-  lastUpdate: Date = new Date();
+export class TodoDashboardComponent implements OnInit{
+  todos!: Observable<Todo[]>;
+  lastUpdate!: Observable<Date>;
 
   constructor(
-    // private store: Store<TodoState>
-  ) {
-    // this.todos = store.select('todos');
-    // this.lastUpdate = store.select('lastUpdate');
+    private store: Store<TodoState>
+  ) {}
+
+  ngOnInit(): void {
+    this.todos = this.store.select((TodoReducerKey as any))
+    .pipe(map(todoResponse => todoResponse?.todos || []));
+    this.lastUpdate = this.store.select((TodoReducerKey as any))
+    .pipe(map(todoResponse => todoResponse?.lastUpdate));
   }
 
   clearTodos() {
-    this.onclear.emit();
-    // this.store.dispatch({
-    //   type: CLEAR_TODOS
-    // });
+    this.store.dispatch({
+      type: CLEARTODOS
+    });
   }
 }
